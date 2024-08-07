@@ -1,10 +1,12 @@
-import { useState } from "react";
-import { Cat, Heart, Info, Paw } from "lucide-react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { Cat, Heart, Info, Paw, RefreshCw } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { useQuery } from "@tanstack/react-query";
 
 const catBreeds = [
   { name: "Siamese", origin: "Thailand", temperament: "Vocal, Affectionate, Intelligent" },
@@ -13,34 +15,58 @@ const catBreeds = [
   { name: "British Shorthair", origin: "United Kingdom", temperament: "Calm, Patient, Intelligent" },
 ];
 
+const catImages = [
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1200px-Cat03.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/1200px-Cat_November_2010-1a.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Kittyply_edit1.jpg/1200px-Kittyply_edit1.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Sleeping_cat_on_her_back.jpg/1200px-Sleeping_cat_on_her_back.jpg",
+];
+
+const fetchCatFact = async () => {
+  const response = await fetch("https://catfact.ninja/fact");
+  const data = await response.json();
+  return data.fact;
+};
+
 const CatFact = ({ fact }) => (
-  <motion.li
+  <motion.div
     className="bg-white p-4 rounded-lg shadow-md mb-4"
     initial={{ opacity: 0, y: 50 }}
     animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -50 }}
     transition={{ duration: 0.5 }}
   >
     <div className="flex items-center">
-      <Paw className="mr-2 text-purple-500" />
+      <Paw className="mr-2 text-purple-500 flex-shrink-0" />
       <span>{fact}</span>
     </div>
-  </motion.li>
+  </motion.div>
 );
 
 const CatBreedCard = ({ breed }) => (
-  <Card>
-    <CardHeader>
-      <CardTitle>{breed.name}</CardTitle>
-      <CardDescription>Origin: {breed.origin}</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <p><strong>Temperament:</strong> {breed.temperament}</p>
-    </CardContent>
-  </Card>
+  <motion.div
+    initial={{ opacity: 0, scale: 0.8 }}
+    animate={{ opacity: 1, scale: 1 }}
+    transition={{ duration: 0.5 }}
+  >
+    <Card className="h-full">
+      <CardHeader>
+        <CardTitle>{breed.name}</CardTitle>
+        <CardDescription>Origin: {breed.origin}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p><strong>Temperament:</strong> {breed.temperament}</p>
+      </CardContent>
+    </Card>
+  </motion.div>
 );
 
 const Index = () => {
   const [likes, setLikes] = useState(0);
+  const { data: catFact, refetch: refetchCatFact } = useQuery({
+    queryKey: ["catFact"],
+    queryFn: fetchCatFact,
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-100 to-pink-100 p-8">
@@ -54,25 +80,37 @@ const Index = () => {
           <Cat className="mr-4 text-pink-500" size={48} /> Fantastic Felines
         </motion.h1>
         
-        <div className="relative mb-12">
-          <img
-            src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1200px-Cat03.jpg"
-            alt="A cute cat"
-            className="mx-auto object-cover w-full h-[500px] rounded-xl shadow-2xl"
-          />
-          <Button 
-            variant="outline" 
-            size="icon"
-            className="absolute bottom-4 right-4 bg-white/50 backdrop-blur-sm hover:bg-white/75"
-            onClick={() => setLikes(likes + 1)}
-          >
-            <Heart className={`h-6 w-6 ${likes > 0 ? 'text-red-500 fill-red-500' : 'text-gray-500'}`} />
-          </Button>
-          {likes > 0 && (
-            <Badge variant="secondary" className="absolute bottom-4 left-4">
-              {likes} {likes === 1 ? 'Like' : 'Likes'}
-            </Badge>
-          )}
+        <div className="mb-12">
+          <Carousel className="w-full max-w-xl mx-auto">
+            <CarouselContent>
+              {catImages.map((src, index) => (
+                <CarouselItem key={index}>
+                  <div className="relative p-1">
+                    <img
+                      src={src}
+                      alt={`Cute cat ${index + 1}`}
+                      className="mx-auto object-cover w-full h-[400px] rounded-xl shadow-2xl"
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      className="absolute bottom-4 right-4 bg-white/50 backdrop-blur-sm hover:bg-white/75"
+                      onClick={() => setLikes(likes + 1)}
+                    >
+                      <Heart className={`h-6 w-6 ${likes > 0 ? 'text-red-500 fill-red-500' : 'text-gray-500'}`} />
+                    </Button>
+                    {likes > 0 && (
+                      <Badge variant="secondary" className="absolute bottom-4 left-4">
+                        {likes} {likes === 1 ? 'Like' : 'Likes'}
+                      </Badge>
+                    )}
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
         </div>
 
         <Tabs defaultValue="facts" className="mb-12">
@@ -83,17 +121,18 @@ const Index = () => {
           <TabsContent value="facts">
             <Card>
               <CardHeader>
-                <CardTitle>Fascinating Feline Facts</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  Fascinating Feline Facts
+                  <Button variant="outline" size="icon" onClick={() => refetchCatFact()}>
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                </CardTitle>
                 <CardDescription>Discover interesting tidbits about our feline friends</CardDescription>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-4">
-                  <CatFact fact="Cats have been domesticated for over 4,000 years." />
-                  <CatFact fact="They can make over 100 different vocal sounds." />
-                  <CatFact fact="A group of cats is called a 'clowder'." />
-                  <CatFact fact="Cats spend 70% of their lives sleeping." />
-                  <CatFact fact="They have an excellent sense of balance and flexible bodies." />
-                </ul>
+                <AnimatePresence mode="wait">
+                  {catFact && <CatFact key={catFact} fact={catFact} />}
+                </AnimatePresence>
               </CardContent>
             </Card>
           </TabsContent>
@@ -114,19 +153,25 @@ const Index = () => {
           </TabsContent>
         </Tabs>
 
-        <Card className="bg-purple-50">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Info className="mr-2 text-purple-500" />
-              Did You Know?
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-lg">
-              Cats have a unique way of walking. Unlike most mammals, they directly register, meaning their hind paws fall almost exactly in the same place as their front paws when they walk.
-            </p>
-          </CardContent>
-        </Card>
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <Card className="bg-purple-50">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Info className="mr-2 text-purple-500" />
+                Did You Know?
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-lg">
+                Cats have a unique way of walking. Unlike most mammals, they directly register, meaning their hind paws fall almost exactly in the same place as their front paws when they walk.
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     </div>
   );

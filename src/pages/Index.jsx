@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Cat, Heart, Info, Paw, RefreshCw, Star, Moon, Sun, Camera, Sparkles } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Cat, Heart, Info, Paw, RefreshCw, Star, Moon, Sun, Camera, Sparkles, Music, Volume2, VolumeX } from "lucide-react";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Slider } from "@/components/ui/slider";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const catBreeds = [
   { name: "Siamese", origin: "Thailand", temperament: "Vocal, Affectionate, Intelligent", popularity: 85, lifespan: "12-15 years" },
@@ -23,12 +25,18 @@ const catBreeds = [
 ];
 
 const catImages = [
-  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1200px-Cat03.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/1200px-Cat_November_2010-1a.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Kittyply_edit1.jpg/1200px-Kittyply_edit1.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Sleeping_cat_on_her_back.jpg/1200px-Sleeping_cat_on_her_back.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Collage_of_Six_Cats-02.jpg/1200px-Collage_of_Six_Cats-02.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Cats_Petunia_and_Mimosa_2004.jpg/1200px-Cats_Petunia_and_Mimosa_2004.jpg",
+  { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1200px-Cat03.jpg", name: "Whiskers" },
+  { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/1200px-Cat_November_2010-1a.jpg", name: "Mittens" },
+  { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Kittyply_edit1.jpg/1200px-Kittyply_edit1.jpg", name: "Luna" },
+  { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Sleeping_cat_on_her_back.jpg/1200px-Sleeping_cat_on_her_back.jpg", name: "Oreo" },
+  { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Collage_of_Six_Cats-02.jpg/1200px-Collage_of_Six_Cats-02.jpg", name: "Simba" },
+  { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Cats_Petunia_and_Mimosa_2004.jpg/1200px-Cats_Petunia_and_Mimosa_2004.jpg", name: "Nala" },
+];
+
+const catSounds = [
+  "/meow1.mp3",
+  "/meow2.mp3",
+  "/purr.mp3",
 ];
 
 const catPopularityData = [
@@ -113,6 +121,9 @@ const Index = () => {
   const [likes, setLikes] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(0.5);
+  const audioRef = useRef(null);
   const { data: catFact, refetch: refetchCatFact } = useQuery({
     queryKey: ["catFact"],
     queryFn: fetchCatFact,
@@ -123,10 +134,33 @@ const Index = () => {
     document.documentElement.classList.toggle('dark');
   };
 
+  const playRandomCatSound = () => {
+    if (audioRef.current) {
+      audioRef.current.src = catSounds[Math.floor(Math.random() * catSounds.length)];
+      audioRef.current.volume = volume;
+      audioRef.current.play();
+    }
+  };
+
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+    if (audioRef.current) {
+      audioRef.current.muted = !isMuted;
+    }
+  };
+
+  const handleVolumeChange = (newVolume) => {
+    setVolume(newVolume[0]);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume[0];
+    }
+  };
+
   useEffect(() => {
     if (likes > 0 && likes % 5 === 0) {
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);
+      playRandomCatSound();
     }
   }, [likes]);
 
@@ -176,7 +210,7 @@ const Index = () => {
         >
           <Carousel className="w-full max-w-xl mx-auto">
             <CarouselContent>
-              {catImages.map((src, index) => (
+              {catImages.map((cat, index) => (
                 <CarouselItem key={index}>
                   <motion.div
                     className="relative p-1"
@@ -184,10 +218,13 @@ const Index = () => {
                     transition={{ type: "spring", stiffness: 300, damping: 10 }}
                   >
                     <img
-                      src={src}
-                      alt={`Cute cat ${index + 1}`}
+                      src={cat.url}
+                      alt={`Cute cat named ${cat.name}`}
                       className="mx-auto object-cover w-full h-[400px] rounded-xl shadow-2xl"
                     />
+                    <div className="absolute top-4 left-4 bg-black/50 text-white px-2 py-1 rounded-full backdrop-blur-sm">
+                      {cat.name}
+                    </div>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -195,7 +232,10 @@ const Index = () => {
                             variant="outline" 
                             size="icon"
                             className="absolute bottom-4 right-4 bg-white/50 backdrop-blur-sm hover:bg-white/75 dark:bg-black/50 dark:hover:bg-black/75"
-                            onClick={() => setLikes(likes + 1)}
+                            onClick={() => {
+                              setLikes(likes + 1);
+                              playRandomCatSound();
+                            }}
                           >
                             <Heart className={`h-6 w-6 ${likes > 0 ? 'text-red-500 fill-red-500' : 'text-gray-500'}`} />
                           </Button>
@@ -217,7 +257,47 @@ const Index = () => {
             <CarouselPrevious />
             <CarouselNext />
           </Carousel>
+          <div className="flex items-center justify-center mt-4 space-x-4">
+            <Button variant="outline" size="icon" onClick={toggleMute}>
+              {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </Button>
+            <Slider
+              className="w-[200px]"
+              value={[volume]}
+              max={1}
+              step={0.1}
+              onValueChange={handleVolumeChange}
+            />
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Music className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Cat Sounds</DialogTitle>
+                  <DialogDescription>
+                    Click on a sound to play it!
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid grid-cols-2 gap-4">
+                  {catSounds.map((sound, index) => (
+                    <Button key={index} onClick={() => {
+                      if (audioRef.current) {
+                        audioRef.current.src = sound;
+                        audioRef.current.play();
+                      }
+                    }}>
+                      Play Sound {index + 1}
+                    </Button>
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </motion.div>
+        <audio ref={audioRef} />
 
         <Tabs defaultValue="facts" className="mb-12">
           <TabsList className="grid w-full grid-cols-3">

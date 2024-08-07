@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Cat, Heart, Info, Paw, RefreshCw, Star, Moon, Sun } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
+import { Cat, Heart, Info, Paw, RefreshCw, Star, Moon, Sun, Camera, Sparkles } from "lucide-react";
+import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -9,14 +9,17 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { useQuery } from "@tanstack/react-query";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const catBreeds = [
-  { name: "Siamese", origin: "Thailand", temperament: "Vocal, Affectionate, Intelligent", popularity: 85 },
-  { name: "Persian", origin: "Iran", temperament: "Gentle, Quiet, Dignified", popularity: 78 },
-  { name: "Maine Coon", origin: "United States", temperament: "Gentle, Friendly, Intelligent", popularity: 90 },
-  { name: "British Shorthair", origin: "United Kingdom", temperament: "Calm, Patient, Intelligent", popularity: 82 },
-  { name: "Sphynx", origin: "Canada", temperament: "Energetic, Mischievous, Intelligent", popularity: 75 },
-  { name: "Bengal", origin: "United States", temperament: "Active, Playful, Curious", popularity: 88 },
+  { name: "Siamese", origin: "Thailand", temperament: "Vocal, Affectionate, Intelligent", popularity: 85, lifespan: "12-15 years" },
+  { name: "Persian", origin: "Iran", temperament: "Gentle, Quiet, Dignified", popularity: 78, lifespan: "10-17 years" },
+  { name: "Maine Coon", origin: "United States", temperament: "Gentle, Friendly, Intelligent", popularity: 90, lifespan: "9-15 years" },
+  { name: "British Shorthair", origin: "United Kingdom", temperament: "Calm, Patient, Intelligent", popularity: 82, lifespan: "12-20 years" },
+  { name: "Sphynx", origin: "Canada", temperament: "Energetic, Mischievous, Intelligent", popularity: 75, lifespan: "8-14 years" },
+  { name: "Bengal", origin: "United States", temperament: "Active, Playful, Curious", popularity: 88, lifespan: "12-16 years" },
 ];
 
 const catImages = [
@@ -26,6 +29,15 @@ const catImages = [
   "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Sleeping_cat_on_her_back.jpg/1200px-Sleeping_cat_on_her_back.jpg",
   "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Collage_of_Six_Cats-02.jpg/1200px-Collage_of_Six_Cats-02.jpg",
   "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Cats_Petunia_and_Mimosa_2004.jpg/1200px-Cats_Petunia_and_Mimosa_2004.jpg",
+];
+
+const catPopularityData = [
+  { year: 2018, popularity: 65 },
+  { year: 2019, popularity: 70 },
+  { year: 2020, popularity: 78 },
+  { year: 2021, popularity: 82 },
+  { year: 2022, popularity: 88 },
+  { year: 2023, popularity: 92 },
 ];
 
 const fetchCatFact = async () => {
@@ -49,35 +61,58 @@ const CatFact = ({ fact }) => (
   </motion.div>
 );
 
-const CatBreedCard = ({ breed }) => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.8 }}
-    animate={{ opacity: 1, scale: 1 }}
-    transition={{ duration: 0.5 }}
-  >
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          {breed.name}
-          <Star className={`h-5 w-5 ${breed.popularity >= 85 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
-        </CardTitle>
-        <CardDescription>Origin: {breed.origin}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="mb-2"><strong>Temperament:</strong> {breed.temperament}</p>
-        <div className="flex items-center">
-          <span className="mr-2 text-sm font-medium">Popularity:</span>
-          <Progress value={breed.popularity} className="w-full" />
-          <span className="ml-2 text-sm font-medium">{breed.popularity}%</span>
-        </div>
-      </CardContent>
-    </Card>
-  </motion.div>
-);
+const CatBreedCard = ({ breed }) => {
+  const controls = useAnimation();
+
+  useEffect(() => {
+    controls.start({ scale: [1, 1.05, 1], transition: { duration: 0.5, repeat: Infinity, repeatType: "reverse" } });
+  }, [controls]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5 }}
+      className="relative"
+    >
+      <Card className="h-full overflow-hidden">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            {breed.name}
+            <motion.div animate={controls}>
+              <Star className={`h-5 w-5 ${breed.popularity >= 85 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+            </motion.div>
+          </CardTitle>
+          <CardDescription>Origin: {breed.origin}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="mb-2"><strong>Temperament:</strong> {breed.temperament}</p>
+          <p className="mb-2"><strong>Lifespan:</strong> {breed.lifespan}</p>
+          <div className="flex items-center">
+            <span className="mr-2 text-sm font-medium">Popularity:</span>
+            <Progress value={breed.popularity} className="w-full" />
+            <span className="ml-2 text-sm font-medium">{breed.popularity}%</span>
+          </div>
+        </CardContent>
+      </Card>
+      {breed.popularity >= 85 && (
+        <motion.div
+          className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 rounded-full p-1"
+          initial={{ rotate: 0 }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        >
+          <Sparkles className="h-4 w-4" />
+        </motion.div>
+      )}
+    </motion.div>
+  );
+};
 
 const Index = () => {
   const [likes, setLikes] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
   const { data: catFact, refetch: refetchCatFact } = useQuery({
     queryKey: ["catFact"],
     queryFn: fetchCatFact,
@@ -87,6 +122,13 @@ const Index = () => {
     setIsDarkMode(!isDarkMode);
     document.documentElement.classList.toggle('dark');
   };
+
+  useEffect(() => {
+    if (likes > 0 && likes % 5 === 0) {
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+    }
+  }, [likes]);
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark bg-gradient-to-b from-gray-900 to-purple-900' : 'bg-gradient-to-b from-purple-100 to-pink-100'} p-8`}>
@@ -107,6 +149,25 @@ const Index = () => {
           </div>
         </div>
         
+        <AnimatePresence>
+          {showAlert && (
+            <motion.div
+              initial={{ opacity: 0, y: -50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
+              className="mb-4"
+            >
+              <Alert>
+                <Camera className="h-4 w-4" />
+                <AlertTitle>Milestone reached!</AlertTitle>
+                <AlertDescription>
+                  You've liked {likes} cat photos. Keep spreading the love!
+                </AlertDescription>
+              </Alert>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
@@ -127,14 +188,23 @@ const Index = () => {
                       alt={`Cute cat ${index + 1}`}
                       className="mx-auto object-cover w-full h-[400px] rounded-xl shadow-2xl"
                     />
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      className="absolute bottom-4 right-4 bg-white/50 backdrop-blur-sm hover:bg-white/75 dark:bg-black/50 dark:hover:bg-black/75"
-                      onClick={() => setLikes(likes + 1)}
-                    >
-                      <Heart className={`h-6 w-6 ${likes > 0 ? 'text-red-500 fill-red-500' : 'text-gray-500'}`} />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="icon"
+                            className="absolute bottom-4 right-4 bg-white/50 backdrop-blur-sm hover:bg-white/75 dark:bg-black/50 dark:hover:bg-black/75"
+                            onClick={() => setLikes(likes + 1)}
+                          >
+                            <Heart className={`h-6 w-6 ${likes > 0 ? 'text-red-500 fill-red-500' : 'text-gray-500'}`} />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Show some love!</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     {likes > 0 && (
                       <Badge variant="secondary" className="absolute bottom-4 left-4">
                         {likes} {likes === 1 ? 'Like' : 'Likes'}
@@ -150,9 +220,10 @@ const Index = () => {
         </motion.div>
 
         <Tabs defaultValue="facts" className="mb-12">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="facts">Feline Facts</TabsTrigger>
             <TabsTrigger value="breeds">Cat Breeds</TabsTrigger>
+            <TabsTrigger value="stats">Cat Stats</TabsTrigger>
           </TabsList>
           <TabsContent value="facts">
             <Card>
@@ -183,6 +254,28 @@ const Index = () => {
                   {catBreeds.map((breed) => (
                     <CatBreedCard key={breed.name} breed={breed} />
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="stats">
+            <Card>
+              <CardHeader>
+                <CardTitle>Cat Popularity Over Time</CardTitle>
+                <CardDescription>See how cat popularity has increased in recent years</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={catPopularityData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="year" />
+                      <YAxis />
+                      <RechartsTooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="popularity" stroke="#8884d8" activeDot={{ r: 8 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
               </CardContent>
             </Card>
